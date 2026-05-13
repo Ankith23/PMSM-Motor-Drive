@@ -1,4 +1,4 @@
-/* TRANSITION IS HAPPENNING SMOOTHLY AFTER 10Hz*/
+/* TRANSITION IS HAPPENNING SMOOTHLY AFTER 10Hz */
 #include "F28x_Project.h"
 #include "math.h"
 void InitTimer0(void);//Timer0 Initialization Function
