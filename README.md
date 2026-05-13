@@ -74,7 +74,5 @@ After position estimation, sinusoidal PWM / Space Vector Modulation is applied f
 PMSM-Motor-Drive-TMS320F28379D/
 │
 ├── src/            # Source files
-├── images/         # Hardware setup images
 ├── waveforms/      # PWM and signal waveforms
-├── docs/           # Reports and documentation
 └── README.md
