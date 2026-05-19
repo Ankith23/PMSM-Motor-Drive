@@ -1,78 +1,75 @@
-# PMSM-Motor-Drive
-Embedded C implementation of PMSM motor control using TMS320F28379D DSP with eQEP-based rotor position feedback and SPWM inverter control.
+# PMSM Motor Drive — TMS320F28379D
 
-// ************************************************************************************************************************************** //
+Hybrid BLDC-to-PMSM motor drive in bare **Embedded C** on the TI TMS320F28379D (C2000 Delfino, 200 MHz).
+No HAL. No CubeMX. Pure register-level peripheral configuration.
 
-# PMSM Motor Drive using TMS320F28379D
-
-## Overview
-This project implements a closed-loop PMSM motor drive using the Texas Instruments TMS320F28379D Digital Signal Processor (DSP). The system initially operates the motor in six-step BLDC mode using Hall sensor feedback and transitions to SPWM-based PMSM operation after reaching a predefined speed threshold.
-
-The project focuses on low-cost PMSM control by utilizing Hall sensors for rotor position estimation instead of expensive encoders.
-
-## Features
-- Closed-loop PMSM motor drive
-- Six-step BLDC startup control
-- Automatic transition to PMSM/SPWM operation
-- Hall-sensor-based rotor position estimation
-- eQEP signal generation for rotor position emulation
-- Real-time PWM generation using TMS320F28379D
-- Inverter gate pulse generation using Smart Power Module
-- Speed estimation and control
+Oscilloscope captures of PWM waveforms included in `WAVEFORMS.zip`.
 
 ---
 
-## Hardware Used
-- Texas Instruments TMS320F28379D DSP
-- BLDC/PMSM Motor
-- Hall Sensors
-- Smart Power Module (SPM)
-- Three-phase inverter
-- Gate driver circuit
-- DC Power Supply
+## How it works
+
+| Speed | Mode | Method |
+|---|---|---|
+| < 10 Hz | BLDC | Hall sensor 6-step commutation (GPIO52 / GPIO94 / GPIO111) |
+| ≥ 10 Hz | PMSM | Sinusoidal SPWM using eQEP-derived rotor position angle |
+
+**Frequency estimation** — CpuTimer0 measures the period between rising edges on H1 (GPIO52). A rolling average filters noise. When frequency crosses 10 Hz, the controller switches from `BLDCMOTOR()` to `NEWBLDCMOTOR()`.
+
+**eQEP emulation** — No physical encoder used. ePWM2 and ePWM3 generate synthetic EQEP1A/EQEP1B quadrature signals with 90° phase offset via `TBPHS`. The eQEP module counts these; the latched `QPOSSLAT` register provides the rotor angle.
+
+**SPWM generation** — Three sinusoidal duty cycles (0°, 120°, 240°) computed from eQEP position each cycle and written to ePWM4/5/6 CMPA and CMPB registers:
+```
+CMPA = 0.5 × TBPRD × (1 + sin(θ))
+```
 
 ---
 
-## Software Used
-- Code Composer Studio (CCS)
-- Embedded C
+## Peripherals used
+
+| Peripheral | Role |
+|---|---|
+| ePWM1 | Strobe pulse generation |
+| ePWM2 / ePWM3 | Synthetic EQEP1A / EQEP1B quadrature signal generation |
+| ePWM4 / ePWM5 / ePWM6 | 3-phase inverter gate drives (BLDC and PMSM modes) |
+| eQEP1 | Position counter from emulated quadrature signals |
+| ADC-A (SOC2/3/4) | Phase current sensing — ADCINA2, ADCINA3, ADCINA4 |
+| CpuTimer0 | Hall edge period measurement for frequency estimation |
+| GPIO52 / GPIO94 / GPIO111 | Hall sensor inputs H1 / H2 / H3 |
 
 ---
 
-## Working Principle
+## Hardware
 
-### 1. BLDC Startup
-The motor initially runs in six-step commutation mode using Hall sensor feedback to achieve reliable startup torque.
-
-### 2. Mode Transition
-Once the motor speed reaches approximately 10 Hz, the controller automatically transitions from BLDC operation to SPWM-based PMSM control.
-
-### 3. Rotor Position Emulation
-Hall sensor signals are processed to generate equivalent eQEP signals for rotor position estimation and smoother PMSM operation.
-
-### 4. PWM Generation
-The TMS320F28379D generates high-frequency PWM signals for inverter switching and motor control.
-
-### 5. PMSM Operation
-After position estimation, sinusoidal PWM / Space Vector Modulation is applied for smoother torque and improved efficiency.
+- TMS320F28379D LaunchPad (LAUNCHXL-F28379D)
+- 3-phase BLDC / PMSM motor
+- Smart Power Module (SPM) — 3-phase inverter + gate drivers
+- Hall effect sensors × 3
+- DC power supply
 
 ---
 
-## TMS320F28379D Modules Used
-- GPIO Module
-- ePWM Module
-- eQEP Module
-- ADC Module
-- Timer Module
-- Interrupt Module
+## Build
+
+- **IDE:** Code Composer Studio v12+
+- **Compiler:** TI C2000 CGT
+- **Device files:** C2000Ware
+
+Import into CCS, select TMS320F28379D target, build and flash via onboard XDS110 JTAG.
 
 ---
 
-## Folder Structure
+## Repository contents
 
-```text
-PMSM-Motor-Drive-TMS320F28379D/
-│
-├── src/            # Source files
-├── waveforms/      # PWM and signal waveforms
-└── README.md
+| File | Description |
+|---|---|
+| `main.c` | Full firmware — peripheral init, control loop, ISRs |
+| `WAVEFORMS.zip` | Oscilloscope captures of PWM and Hall signals |
+
+---
+
+## Author
+
+**Ankith S Kashyap** — B.E. EEE, NIE Mysore (2025)
+Targeting embedded firmware / automotive embedded roles.
+[LinkedIn](https://linkedin.com/in/your-profile) · [Email](mailto:ankithskashyap23@gmail.com)
